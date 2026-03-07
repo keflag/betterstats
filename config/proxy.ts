@@ -43,12 +43,12 @@ export default {
   },
   pre: {
     '/auth/': {
-      target: 'your pre url',
+      target: 'http://localhost:8080',
       changeOrigin: true,
       pathRewrite: { '^': '' },
     },
     '/api/': {
-      target: 'your pre url',
+      target: 'http://localhost:8080',
       changeOrigin: true,
       pathRewrite: { '^': '' },
     },
