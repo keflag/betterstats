@@ -11,8 +11,10 @@ import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 import { pool } from './config/database';
 import userRoutes from './routes/user.routes';
+import loginRoutes from './routes/login.routes';
 
 dotenv.config();
 
@@ -34,6 +36,8 @@ app.use(express.json({ limit: '10mb' }));
 
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+app.use(cookieParser());
+
 app.use((req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
   res.on('finish', () => {
@@ -43,6 +47,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+app.use('/auth', loginRoutes);
 app.use('/api', userRoutes);
 
 app.get('/health', async (_req: Request, res: Response) => {
