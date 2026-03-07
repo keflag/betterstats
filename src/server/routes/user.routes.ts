@@ -9,7 +9,7 @@
 
 import { Router, Request, Response } from 'express';
 import { UserDAO } from '../dao/UserDAO';
-import { validateInput, idSchema, paginationSchema, stringSchema } from '../utils/validators';
+import { validateInput, idSchema, paginationSchema, createUserSchema, updateUserSchema } from '../utils/validators';
 
 const router = Router();
 const userDAO = new UserDAO();
@@ -80,9 +80,9 @@ router.get('/users/:id', async (req: Request, res: Response) => {
 
 router.post('/users', async (req: Request, res: Response) => {
   try {
-    const { name } = validateInput(stringSchema, req.body);
+    const { name, email } = validateInput(createUserSchema, req.body);
     
-    const user = await userDAO.create(name, `${name}@example.com`);
+    const user = await userDAO.create(name, email);
     
     res.status(201).json({
       success: true,
@@ -107,9 +107,9 @@ router.post('/users', async (req: Request, res: Response) => {
 router.put('/users/:id', async (req: Request, res: Response) => {
   try {
     const { id } = validateInput(idSchema, req.params);
-    const { name } = validateInput(stringSchema, req.body);
+    const { name, email } = validateInput(updateUserSchema, req.body);
     
-    const user = await userDAO.update(id, name, `${name}@example.com`);
+    const user = await userDAO.update(id, name, email);
     
     if (!user) {
       res.status(404).json({

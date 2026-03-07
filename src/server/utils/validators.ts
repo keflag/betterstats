@@ -22,6 +22,16 @@ export const stringSchema = z.object({
   name: z.string().min(1).max(255).regex(/^[\w\s\u4e00-\u9fa5-]+$/),
 });
 
+export const createUserSchema = z.object({
+  name: z.string().min(1).max(100).regex(/^[\w\s\u4e00-\u9fa5-]+$/),
+  email: z.string().email().max(255),
+});
+
+export const updateUserSchema = z.object({
+  name: z.string().min(1).max(100).regex(/^[\w\s\u4e00-\u9fa5-]+$/).optional(),
+  email: z.string().email().max(255).optional(),
+});
+
 export type PaginationParams = z.infer<typeof paginationSchema>;
 export type IdParams = z.infer<typeof idSchema>;
 

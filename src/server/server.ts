@@ -12,6 +12,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
+import rateLimit from 'express-rate-limit';
 import { pool } from './config/database';
 import userRoutes from './routes/user.routes';
 import loginRoutes from './routes/login.routes';
@@ -21,7 +22,33 @@ dotenv.config();
 const app: Application = express();
 const PORT = process.env.PORT || 8001;
 
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: {
+    success: false,
+    message: '请求过于频繁，请稍后再试',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: {
+    success: false,
+    message: '尝试次数过多，请 15 分钟后再试',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use(helmet());
+
+app.use(limiter);
+
+app.use('/auth/login', loginLimiter);
 
 app.use(
   cors({

@@ -10,8 +10,9 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
+import jwt from 'jsonwebtoken';
 import { pool } from '../config/database';
-import { generateToken, generateRefreshToken, logOperation } from '../middleware/auth';
+import { generateToken, generateRefreshToken, logOperation, verifyToken } from '../middleware/auth';
 import { validateInput } from '../utils/validators';
 import { z } from 'zod';
 
@@ -155,12 +156,7 @@ router.post('/refresh', async (req: Request, res: Response) => {
   try {
     const { refreshToken } = validateInput(refreshSchema, req.body);
 
-    const payload = await new Promise<any>((resolve, reject) => {
-      require('jsonwebtoken').verify(refreshToken, process.env.JWT_SECRET, (err: any, decoded: any) => {
-        if (err) reject(err);
-        else resolve(decoded);
-      });
-    });
+    const payload = verifyToken(refreshToken);
 
     const userResult = await pool.query(
       'SELECT uuid, username, role, school_uuid, status FROM users WHERE uuid = $1',
@@ -215,12 +211,7 @@ router.post('/logout', async (req: Request, res: Response) => {
     const token = authHeader?.substring(7);
 
     if (token) {
-      const payload = await new Promise<any>((resolve, reject) => {
-        require('jsonwebtoken').verify(token, process.env.JWT_SECRET, (err: any, decoded: any) => {
-          if (err) reject(err);
-          else resolve(decoded);
-        });
-      });
+      const payload = verifyToken(token);
 
       await pool.query(
         `UPDATE user_devices 
@@ -256,12 +247,7 @@ router.get('/me', async (req: Request, res: Response) => {
     }
 
     const token = authHeader.substring(7);
-    const payload = await new Promise<any>((resolve, reject) => {
-      require('jsonwebtoken').verify(token, process.env.JWT_SECRET, (err: any, decoded: any) => {
-        if (err) reject(err);
-        else resolve(decoded);
-      });
-    });
+    const payload = verifyToken(token);
 
     const userResult = await pool.query(
       `SELECT uuid, username, email, role, school_uuid, status, real_name, avatar_url, student_id, class_info
@@ -296,9 +282,16 @@ router.get('/me', async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('获取用户信息失败:', error);
-    res.status(401).json({
+    if (error instanceof Error && error.message.includes('Token')) {
+      res.status(401).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+    res.status(500).json({
       success: false,
-      message: '认证失败',
+      message: '服务器内部错误',
     });
   }
 });

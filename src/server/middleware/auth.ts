@@ -11,7 +11,16 @@ import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import { pool } from '../config/database';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'betterstats-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('生产环境必须设置 JWT_SECRET 环境变量！');
+  }
+  console.warn('警告：未设置 JWT_SECRET，使用临时密钥（仅开发环境）');
+}
+
+const SECRET = JWT_SECRET || 'dev-secret-key-change-in-production';
 const TOKEN_EXPIRES_IN = '2h';
 const REFRESH_TOKEN_EXPIRES_IN = '7d';
 
@@ -28,16 +37,16 @@ export interface AuthRequest extends Request {
 }
 
 export const generateToken = (payload: TokenPayload): string => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_EXPIRES_IN });
+  return jwt.sign(payload, SECRET, { expiresIn: TOKEN_EXPIRES_IN });
 };
 
 export const generateRefreshToken = (uuid: string): string => {
-  return jwt.sign({ uuid }, JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
+  return jwt.sign({ uuid }, SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
 };
 
 export const verifyToken = (token: string): TokenPayload => {
   try {
-    return jwt.verify(token, JWT_SECRET) as TokenPayload;
+    return jwt.verify(token, SECRET) as TokenPayload;
   } catch (error) {
     throw new Error('Token 无效或已过期');
   }
