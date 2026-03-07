@@ -6,6 +6,10 @@
 /src/utils/request-temp.js
 _roadhog-api-doc
 
+# environment
+.env
+.env.test
+
 # production
 /dist
 
