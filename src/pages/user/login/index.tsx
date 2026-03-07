@@ -159,13 +159,20 @@ const Login: React.FC = () => {
         return;
       }
       
+      // 显示后端返回的错误信息
+      const errorMessage = result.message || intl.formatMessage({
+        id: 'pages.login.accountLogin.errorMessage',
+        defaultMessage: '账户或密码错误',
+      });
+      message.error(errorMessage);
       setUserLoginState({ status: 'error', type: 'account' } as any);
-    } catch (error) {
-      const defaultLoginFailureMessage = intl.formatMessage({
+    } catch (error: any) {
+      // 显示后端返回的错误信息
+      const errorMessage = error.message || intl.formatMessage({
         id: 'pages.login.failure',
         defaultMessage: '登录失败，请重试！',
       });
-      message.error(defaultLoginFailureMessage);
+      message.error(errorMessage);
       setUserLoginState({ status: 'error', type: 'account' } as any);
     }
   };
