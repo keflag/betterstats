@@ -63,12 +63,12 @@ export default defineConfig({
    */
   proxy: {
     '/auth/': {
-      target: 'http://localhost:8005',
+      target: 'http://localhost:9000',
       changeOrigin: true,
       pathRewrite: { '^': '' },
     },
     '/api/': {
-      target: 'http://localhost:8005',
+      target: 'http://localhost:9000',
       changeOrigin: true,
       pathRewrite: { '^': '' },
     },
