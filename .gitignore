@@ -10,6 +10,9 @@ _roadhog-api-doc
 .env
 .env.test
 
+# Trae
+/.trae
+
 # production
 /dist
 
