@@ -6,9 +6,6 @@
 /src/utils/request-temp.js
 _roadhog-api-doc
 
-# design map
-design.md
-
 # environment
 .env
 .env.*
