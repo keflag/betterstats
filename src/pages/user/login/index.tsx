@@ -132,29 +132,41 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (values: API.LoginParams) => {
     try {
-      // 登录
-      const msg = await login({ ...values, type });
-      if (msg.status === 'ok') {
+      const loginData = {
+        username: values.username,
+        password: values.password,
+        rememberDevice: values.autoLogin,
+      };
+
+      const result = await login(loginData);
+      
+      if (result.success && result.data) {
         const defaultLoginSuccessMessage = intl.formatMessage({
           id: 'pages.login.success',
           defaultMessage: '登录成功！',
         });
         message.success(defaultLoginSuccessMessage);
+        
+        localStorage.setItem('token', result.data.token);
+        localStorage.setItem('refreshToken', result.data.refreshToken);
+        if (result.data.deviceToken) {
+          localStorage.setItem('deviceToken', result.data.deviceToken);
+        }
+        
         await fetchUserInfo();
         const urlParams = new URL(window.location.href).searchParams;
         window.location.href = urlParams.get('redirect') || '/';
         return;
       }
-      console.log(msg);
-      // 如果失败去设置用户错误信息
-      setUserLoginState(msg);
+      
+      setUserLoginState({ status: 'error', type: 'account' } as any);
     } catch (error) {
       const defaultLoginFailureMessage = intl.formatMessage({
         id: 'pages.login.failure',
         defaultMessage: '登录失败，请重试！',
       });
-      console.log(error);
       message.error(defaultLoginFailureMessage);
+      setUserLoginState({ status: 'error', type: 'account' } as any);
     }
   };
   const { status, type: loginType } = userLoginState;

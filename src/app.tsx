@@ -14,6 +14,7 @@ import {
 import { currentUser as queryCurrentUser } from '@/services/ant-design-pro/api';
 import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
+import request from '@/services/request';
 import '@ant-design/v5-patch-for-react-19';
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -30,32 +31,56 @@ export async function getInitialState(): Promise<{
 }> {
   const fetchUserInfo = async () => {
     try {
-      const msg = await queryCurrentUser({
-        skipErrorHandler: true,
-      });
-      return msg.data;
+      const result = await queryCurrentUser();
+      if (result.success && result.data) {
+        return {
+          uuid: result.data.uuid,
+          username: result.data.username,
+          name: result.data.realName || result.data.username,
+          avatar: result.data.avatarUrl,
+          role: result.data.role,
+          schoolUuid: result.data.schoolUuid,
+        };
+      }
     } catch (_error) {
-      history.push(loginPath);
+      console.error('获取用户信息失败:', _error);
+      return undefined;
     }
     return undefined;
   };
-  // 如果不是登录页面，执行
+  
   const { location } = history;
   if (
     ![loginPath, '/user/register', '/user/register-result'].includes(
       location.pathname,
     )
   ) {
-    const currentUser = await fetchUserInfo();
-    return {
-      fetchUserInfo,
-      currentUser,
-      settings: defaultSettings as Partial<LayoutSettings>,
-    };
+    try {
+      const currentUser = await fetchUserInfo();
+      if (!currentUser) {
+        history.push(loginPath);
+        return {
+          fetchUserInfo,
+          currentUser: undefined,
+          settings: defaultSettings as Partial<LayoutSettings>,
+          loading: false,
+        };
+      }
+      return {
+        fetchUserInfo,
+        currentUser,
+        settings: defaultSettings as Partial<LayoutSettings>,
+        loading: false,
+      };
+    } catch (error) {
+      console.error('初始化失败:', error);
+      history.push(loginPath);
+    }
   }
   return {
     fetchUserInfo,
     settings: defaultSettings as Partial<LayoutSettings>,
+    loading: false,
   };
 }
 
@@ -150,6 +175,5 @@ export const layout: RunTimeLayoutConfig = ({
  * @doc https://umijs.org/docs/max/request#配置
  */
 export const request: RequestConfig = {
-  baseURL: 'https://proapi.azurewebsites.net',
   ...errorConfig,
 };
