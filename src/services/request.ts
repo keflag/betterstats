@@ -7,62 +7,44 @@
  * @version 1.0.0
  */
 
-import type { RequestOptions } from "@@/plugin-request/request";
-import { request } from "@umijs/max";
+import type { RequestOptions } from '@@/plugin-request/request';
 
+/**
+ * @functionName getStoredToken
+ * @description 获取本地存储的 token
+ * @return 返回 token 字符串或 null
+ */
 const getStoredToken = () => {
-	if (typeof window !== "undefined") {
-		return localStorage.getItem("token");
-	}
-	return null;
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('token');
+  }
+  return null;
 };
 
-const handleResponse = async (response: Response): Promise<any> => {
-	const contentType = response.headers.get("content-type");
-
-	if (contentType?.includes("application/json")) {
-		const data = await response.clone().json();
-
-		if (!response.ok) {
-			if (response.status === 401) {
-				localStorage.removeItem("token");
-				localStorage.removeItem("refreshToken");
-				window.location.href = "/user/login";
-			}
-
-			throw new Error(data.message || "请求失败");
-		}
-
-		return data;
-	}
-
-	if (!response.ok) {
-		throw new Error(`HTTP Error: ${response.status}`);
-	}
-
-	return response;
-};
-
+/**
+ * @functionName authHeaderInterceptor
+ * @description 请求拦截器 - 添加认证头
+ * @params url 请求 URL
+ * @params options 请求选项
+ * @return 返回包含认证头的请求配置
+ */
 const authHeaderInterceptor = (url: string, options: RequestOptions) => {
-	const token = getStoredToken();
-
-	if (token) {
-		return {
-			url,
-			options: {
-				...options,
-				headers: {
-					...options.headers,
-					Authorization: `Bearer ${token}`,
-				},
-			},
-		};
-	}
-
-	return { url, options };
+  const token = getStoredToken();
+  
+  if (token) {
+    return {
+      url,
+      options: {
+        ...options,
+        headers: {
+          ...options.headers,
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    };
+  }
+  
+  return { url, options };
 };
 
-request.interceptors.request.use(authHeaderInterceptor);
-request.interceptors.response.use(handleResponse);
-
-export default request;
+export { authHeaderInterceptor, getStoredToken };
