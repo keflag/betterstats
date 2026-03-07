@@ -7,7 +7,7 @@
  * @version 1.0.0
  */
 
-import request from '@/services/request';
+import { request } from '@umijs/max';
 
 export interface LoginParams {
   username: string;
