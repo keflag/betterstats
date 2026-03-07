@@ -8,7 +8,12 @@ _roadhog-api-doc
 
 # environment
 .env
-.env.test
+.env.*
+.env.local
+.env.*.local
+
+# keep .env.example
+!.env.example
 
 # Trae
 /.trae
