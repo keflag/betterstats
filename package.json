@@ -26,12 +26,18 @@
     "start:no-mock": "cross-env MOCK=none UMI_ENV=dev max dev",
     "start:pre": "cross-env REACT_APP_ENV=pre UMI_ENV=dev max dev",
     "start:test": "cross-env REACT_APP_ENV=test MOCK=none UMI_ENV=dev max dev",
+    "server": "ts-node src/server/server.ts",
+    "server:dev": "ts-node src/server/server.ts",
+    "db:init": "ts-node src/server/scripts/init-db.ts",
+    "db:test": "ts-node src/server/scripts/test-db-connection.ts",
     "test": "jest",
     "test:coverage": "npm run jest -- --coverage",
     "test:update": "npm run jest -- -u",
     "tsc": "tsc --noEmit"
   },
-  "browserslist": ["defaults"],
+  "browserslist": [
+    "defaults"
+  ],
   "dependencies": {
     "@ant-design/icons": "^5.6.1",
     "@ant-design/pro-components": "^2.7.19",
@@ -39,9 +45,14 @@
     "antd": "^5.25.4",
     "antd-style": "^3.7.0",
     "classnames": "^2.5.1",
+    "cors": "^2.8.6",
     "dayjs": "^1.11.13",
+    "dotenv": "^17.3.1",
+    "helmet": "^8.1.0",
+    "pg": "^8.20.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@ant-design/pro-cli": "^3.3.0",
@@ -50,10 +61,12 @@
     "@commitlint/config-conventional": "^19.5.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.0.1",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/jest": "^30.0.0",
     "@types/lodash": "^4.17.10",
     "@types/node": "^24.0.10",
+    "@types/pg": "^8.18.0",
     "@types/react": "^19.1.5",
     "@types/react-dom": "^19.1.5",
     "@types/react-helmet": "^6.1.11",
@@ -71,5 +84,7 @@
     "umi-presets-pro": "^2.0.3",
     "umi-serve": "^1.9.11"
   },
-  "engines": { "node": ">=20.0.0" }
+  "engines": {
+    "node": ">=20.0.0"
+  }
 }
