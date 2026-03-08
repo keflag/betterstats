@@ -1,10 +1,10 @@
 /**
  * @fileName auth.ts
- * @description JWT认证模块，提供一次性token生成和验证功能
+ * @description 基于HTTP-Only Cookie的认证模块，支持一次性token
  * @author keflag
  * @createDate 2026-03-08 09:53:42
- * @lastUpdateDate 2026-03-08 10:02:49
- * @version 2.1.0
+ * @lastUpdateDate 2026-03-08 10:04:49
+ * @version 3.0.0
  */
 
 import jwt from 'jsonwebtoken';
@@ -28,6 +28,12 @@ interface JwtPayload {
 const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-change-in-production';
 
 /**
+ * @constant COOKIE_NAME
+ * @description Cookie名称
+ */
+const COOKIE_NAME = 'betterstats_token';
+
+/**
  * @constant USED_TOKENS
  * @description 已使用的token集合（内存存储，重启后清空）
  */
@@ -45,7 +51,7 @@ function generateToken(): string {
         iss: 'betterstats-server',
         jti,
         iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + 60, // 60秒有效期，足够单次请求
+        exp: Math.floor(Date.now() / 1000) + 60, // 60秒有效期
     };
 
     return jwt.sign(payload, JWT_SECRET);
@@ -71,7 +77,7 @@ function verifyToken(token: string): JwtPayload | null {
         // 标记token为已使用
         USED_TOKENS.add(token);
         
-        // 限制集合大小，防止内存泄漏（保留最近10000个）
+        // 限制集合大小，防止内存泄漏
         if (USED_TOKENS.size > 10000) {
             const iterator = USED_TOKENS.values();
             for (let i = 0; i < 1000; i++) {
@@ -89,119 +95,124 @@ function verifyToken(token: string): JwtPayload | null {
 }
 
 /**
- * @functionName authenticateJwt
- * @description JWT认证中间件（一次性token）
+ * @functionName setTokenCookie
+ * @description 设置HTTP-Only Cookie
+ * @params:res Response Express响应对象
+ * @params:token string JWT Token
+ */
+function setTokenCookie(res: Response, token: string): void {
+    res.cookie(COOKIE_NAME, token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 60 * 1000, // 60秒
+        path: '/',
+    });
+}
+
+/**
+ * @functionName clearTokenCookie
+ * @description 清除Token Cookie
+ * @params:res Response Express响应对象
+ */
+function clearTokenCookie(res: Response): void {
+    res.clearCookie(COOKIE_NAME, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+    });
+}
+
+/**
+ * @functionName authenticateCookie
+ * @description Cookie认证中间件（一次性token）
  * @params:req Request Express请求对象
  * @params:res Response Express响应对象
  * @params:next NextFunction Express下一个中间件函数
  */
-function authenticateJwt(req: Request, res: Response, next: NextFunction): void {
-    const authHeader = req.headers.authorization;
+function authenticateCookie(req: Request, res: Response, next: NextFunction): void {
+    const token = req.cookies[COOKIE_NAME];
 
-    if (!authHeader) {
+    if (!token) {
         res.status(401).json({
-            error: '缺少认证信息',
-            message: '请在请求头中添加Authorization: Bearer <token>',
+            error: '未登录',
+            message: '请先访问初始化接口获取访问权限',
         });
         return;
     }
 
-    const parts = authHeader.split(' ');
-    if (parts.length !== 2 || parts[0] !== 'Bearer') {
-        res.status(401).json({
-            error: '认证格式错误',
-            message: 'Authorization头格式应为: Bearer <token>',
-        });
-        return;
-    }
-
-    const token = parts[1];
     const payload = verifyToken(token);
 
     if (!payload) {
+        clearTokenCookie(res);
         res.status(403).json({
-            error: '无效的token',
-            message: 'token已过期、签名无效或已被使用',
+            error: '认证失败',
+            message: 'token已过期或无效，请重新初始化',
         });
         return;
     }
 
     // 将解码后的信息附加到请求对象
     (req as any).jwtPayload = payload;
-    (req as any).usedToken = token;
+    
+    // 生成新token并设置cookie（自动刷新）
+    const newToken = generateToken();
+    setTokenCookie(res, newToken);
+    
     next();
 }
 
 /**
- * @functionName login
- * @description 登录接口处理函数，验证API密码后签发token
+ * @functionName initSession
+ * @description 初始化会话，签发第一个token
  * @params:req Request Express请求对象
  * @params:res Response Express响应对象
  */
-function login(req: Request, res: Response): void {
-    const { password } = req.body;
-    const expectedPassword = process.env.API_PASSWORD;
-
-    if (!expectedPassword) {
-        res.status(500).json({
-            error: '服务器配置错误',
-            message: '未配置API访问密码',
-        });
-        return;
-    }
-
-    if (password !== expectedPassword) {
-        res.status(401).json({
-            error: '认证失败',
-            message: '密码错误',
-        });
-        return;
-    }
-
+function initSession(req: Request, res: Response): void {
+    // 生成初始token
     const token = generateToken();
+    
+    // 设置HTTP-Only Cookie
+    setTokenCookie(res, token);
+    
     res.json({
         success: true,
-        token,
-        message: '请在下一次请求中使用此token，使用后立即失效',
+        message: '会话已初始化，token已设置到HTTP-Only Cookie',
     });
 }
 
 /**
- * @functionName refreshTokenMiddleware
- * @description 刷新token中间件，在响应中返回新token
+ * @functionName logout
+ * @description 退出登录，清除cookie
  * @params:req Request Express请求对象
  * @params:res Response Express响应对象
- * @params:next NextFunction Express下一个中间件函数
  */
-function refreshTokenMiddleware(req: Request, res: Response, next: NextFunction): void {
-    const originalJson = res.json.bind(res);
-    
-    res.json = function(body: any) {
-        // 如果响应成功，附加新token
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-            body.nextToken = generateToken();
-        }
-        return originalJson(body);
-    };
-    
-    next();
+function logout(req: Request, res: Response): void {
+    clearTokenCookie(res);
+    res.json({
+        success: true,
+        message: '已退出登录',
+    });
 }
 
 export {
     generateToken,
     verifyToken,
-    authenticateJwt,
-    login,
-    refreshTokenMiddleware,
+    authenticateCookie,
+    initSession,
+    logout,
+    COOKIE_NAME,
     USED_TOKENS,
 };
 
 export default {
     generateToken,
     verifyToken,
-    authenticateJwt,
-    login,
-    refreshTokenMiddleware,
+    authenticateCookie,
+    initSession,
+    logout,
+    COOKIE_NAME,
     USED_TOKENS,
 };
 

@@ -3,8 +3,8 @@
  * @description 安全的数据库服务，提供PostgreSQL数据库访问API，端口17342
  * @author keflag
  * @createDate 2026-03-08 09:38:44
- * @lastUpdateDate 2026-03-08 09:59:41
- * @version 1.0.0
+ * @lastUpdateDate 2026-03-08 10:06:11
+ * @version 2.0.0
  */
 
 import express, { Request, Response, NextFunction } from 'express';
@@ -13,8 +13,9 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
 import SERVER_CONFIG from './config';
-import { authenticateJwt, login, refreshTokenMiddleware } from './auth';
+import { authenticateCookie, initSession, logout } from './auth';
 
 // 加载环境变量
 dotenv.config();
@@ -95,6 +96,7 @@ const limiter = rateLimit({
 app.use(limiter);
 
 app.use(express.json({ limit: SERVER_CONFIG.SECURITY.MAX_BODY_SIZE }));
+app.use(cookieParser());
 
 // 创建数据库连接池
 const pool = createPool();
@@ -135,12 +137,14 @@ app.get('/health', (req: Request, res: Response) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// 登录接口（无需token）
-app.post('/api/login', login);
+// 初始化会话（无需token，设置HTTP-Only Cookie）
+app.post('/api/init', initSession);
 
-// 以下接口需要JWT token认证，并自动刷新token
-app.use(authenticateJwt);
-app.use(refreshTokenMiddleware);
+// 退出登录
+app.post('/api/logout', logout);
+
+// 以下接口需要Cookie认证（一次性token，自动刷新）
+app.use(authenticateCookie);
 
 // 查询接口 - 使用参数化查询防止SQL注入
 app.post('/api/query', async (req: Request, res: Response, next: NextFunction) => {

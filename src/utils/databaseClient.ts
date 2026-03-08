@@ -1,14 +1,13 @@
 /**
  * @fileName databaseClient.ts
- * @description 前端数据库服务客户端，用于与后端数据库API通信
+ * @description 前端数据库服务客户端，基于HTTP-Only Cookie认证
  * @author keflag
  * @createDate 2026-03-08 09:42:20
- * @lastUpdateDate 2026-03-08 10:00:21
- * @version 2.0.0
+ * @lastUpdateDate 2026-03-08 10:06:11
+ * @version 3.0.0
  */
 
 // 从服务器配置文件导入配置
-// 注意：实际项目中应该通过环境变量或构建时注入
 const SERVER_PORT = 17342;
 const API_BASE_URL = `http://localhost:${SERVER_PORT}`;
 
@@ -19,95 +18,15 @@ const API_BASE_URL = `http://localhost:${SERVER_PORT}`;
 const VALID_IDENTIFIER_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
 
 /**
- * @constant TOKEN_KEY
- * @description 本地存储token的键名
+ * @constant DEFAULT_OPTIONS
+ * @description 默认fetch选项，包含credentials
  */
-const TOKEN_KEY = 'betterstats_jwt_token';
-
-/**
- * @variable authToken
- * @description 当前使用的JWT token
- */
-let authToken: string | null = null;
-
-/**
- * @functionName setAuthToken
- * @description 设置认证token
- * @params:token string JWT token
- * @example setAuthToken('eyJhbGciOiJIUzI1NiIs...');
- */
-function setAuthToken(token: string): void {
-    authToken = token;
-    localStorage.setItem(TOKEN_KEY, token);
-}
-
-/**
- * @functionName getAuthToken
- * @description 获取当前认证token
- * @return string | null token或null
- */
-function getAuthToken(): string | null {
-    if (!authToken) {
-        authToken = localStorage.getItem(TOKEN_KEY);
-    }
-    return authToken;
-}
-
-/**
- * @functionName clearAuthToken
- * @description 清除认证token
- */
-function clearAuthToken(): void {
-    authToken = null;
-    localStorage.removeItem(TOKEN_KEY);
-}
-
-/**
- * @functionName getAuthHeaders
- * @description 获取包含认证信息的请求头
- * @return Record<string, string> 请求头对象
- */
-function getAuthHeaders(): Record<string, string> {
-    const headers: Record<string, string> = {
+const DEFAULT_OPTIONS: RequestInit = {
+    credentials: 'include', // 自动携带cookie
+    headers: {
         'Content-Type': 'application/json',
-    };
-
-    const token = getAuthToken();
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    return headers;
-}
-
-/**
- * @functionName handleResponse
- * @description 处理响应，自动提取并保存nextToken
- * @params:response Response fetch响应对象
- * @return Promise<any> 响应体
- */
-async function handleResponse(response: Response): Promise<any> {
-    const data = await response.json();
-    
-    // 自动保存服务端返回的新token
-    if (data.nextToken) {
-        setAuthToken(data.nextToken);
-        // 删除nextToken，不暴露给调用方
-        delete data.nextToken;
-    }
-    
-    return data;
-}
-
-/**
- * @interface LoginResult
- * @description 登录结果接口
- */
-interface LoginResult {
-    success: boolean;
-    token: string;
-    message: string;
-}
+    },
+};
 
 /**
  * @interface QueryResult
@@ -141,29 +60,45 @@ interface SingleRecordResult {
 }
 
 /**
- * @functionName login
- * @description 登录获取初始JWT token
- * @params:password string 数据库密码
- * @return Promise<LoginResult> 登录结果
- * @example const result = await login('your-password');
+ * @interface InitResult
+ * @description 初始化结果接口
  */
-async function login(password: string): Promise<LoginResult> {
-    const response = await fetch(`${API_BASE_URL}/api/login`, {
+interface InitResult {
+    success: boolean;
+    message: string;
+}
+
+/**
+ * @functionName initSession
+ * @description 初始化会话，获取访问权限
+ * @return Promise<InitResult> 初始化结果
+ * @example await initSession();
+ */
+async function initSession(): Promise<InitResult> {
+    const response = await fetch(`${API_BASE_URL}/api/init`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ password }),
+        ...DEFAULT_OPTIONS,
     });
 
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || '登录失败');
+        throw new Error(error.error || '初始化失败');
     }
 
-    const result: LoginResult = await response.json();
-    setAuthToken(result.token);
-    return result;
+    return response.json();
+}
+
+/**
+ * @functionName logout
+ * @description 退出登录，清除会话
+ * @return Promise<void>
+ * @example await logout();
+ */
+async function logout(): Promise<void> {
+    await fetch(`${API_BASE_URL}/api/logout`, {
+        method: 'POST',
+        ...DEFAULT_OPTIONS,
+    });
 }
 
 /**
@@ -193,13 +128,12 @@ async function checkHealth(): Promise<boolean> {
 async function executeQuery(sql: string, params: any[] = []): Promise<QueryResult> {
     const response = await fetch(`${API_BASE_URL}/api/query`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        ...DEFAULT_OPTIONS,
         body: JSON.stringify({ sql, params }),
     });
 
     if (response.status === 401 || response.status === 403) {
-        clearAuthToken();
-        throw new Error('认证失败，请重新登录');
+        throw new Error('会话已过期，请重新初始化');
     }
 
     if (!response.ok) {
@@ -207,7 +141,7 @@ async function executeQuery(sql: string, params: any[] = []): Promise<QueryResul
         throw new Error(error.error || '查询执行失败');
     }
 
-    return handleResponse(response);
+    return response.json();
 }
 
 /**
@@ -240,14 +174,11 @@ async function getTableData(
 
     const response = await fetch(
         `${API_BASE_URL}/api/table/${encodeURIComponent(tableName)}?${queryParams}`,
-        {
-            headers: getAuthHeaders(),
-        }
+        DEFAULT_OPTIONS
     );
 
     if (response.status === 401 || response.status === 403) {
-        clearAuthToken();
-        throw new Error('认证失败，请重新登录');
+        throw new Error('会话已过期，请重新初始化');
     }
 
     if (!response.ok) {
@@ -255,7 +186,7 @@ async function getTableData(
         throw new Error(error.error || '获取表数据失败');
     }
 
-    return handleResponse(response);
+    return response.json();
 }
 
 /**
@@ -269,14 +200,11 @@ async function getTableData(
 async function getRecordById(tableName: string, id: number): Promise<SingleRecordResult> {
     const response = await fetch(
         `${API_BASE_URL}/api/table/${encodeURIComponent(tableName)}/${id}`,
-        {
-            headers: getAuthHeaders(),
-        }
+        DEFAULT_OPTIONS
     );
 
     if (response.status === 401 || response.status === 403) {
-        clearAuthToken();
-        throw new Error('认证失败，请重新登录');
+        throw new Error('会话已过期，请重新初始化');
     }
 
     if (!response.ok) {
@@ -284,7 +212,7 @@ async function getRecordById(tableName: string, id: number): Promise<SingleRecor
         throw new Error(error.error || '获取记录失败');
     }
 
-    return handleResponse(response);
+    return response.json();
 }
 
 /**
@@ -309,10 +237,8 @@ function validateColumnName(columnName: string): boolean {
 
 // 导出数据库客户端API
 export const databaseClient = {
-    login,
-    setAuthToken,
-    getAuthToken,
-    clearAuthToken,
+    initSession,
+    logout,
     checkHealth,
     executeQuery,
     getTableData,
