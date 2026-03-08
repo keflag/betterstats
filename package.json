@@ -6,7 +6,9 @@
     "build": "umi build",
     "postinstall": "umi setup",
     "setup": "umi setup",
-    "start": "npm run dev"
+    "start": "npm run dev",
+    "server": "ts-node server/databaseService.ts",
+    "server:dev": "ts-node-dev --respawn server/databaseService.ts"
   },
   "dependencies": {
     "@types/cors": "^2.8.19",
