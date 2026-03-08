@@ -156,8 +156,9 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           position: 'sticky',
           top: 0,
           left: 0,
-          overflow: 'hidden',
+          overflow: 'auto',
           boxShadow: '2px 0 8px rgba(0,0,0,0.15)',
+          zIndex: 1000,
         }}
       >
         <div
@@ -178,14 +179,14 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               />
             </Tooltip>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <AppstoreOutlined style={{ fontSize: 24, color: '#fff' }} />
-              <Text strong style={{ fontSize: 18, color: '#fff', fontWeight: 600 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '0 16px' }}>
+              <AppstoreOutlined style={{ fontSize: 24, color: '#fff', flexShrink: 0 }} />
+              <Text strong style={{ fontSize: 16, color: '#fff', fontWeight: 600, whiteSpace: 'nowrap' }}>
                 BetterStats
               </Text>
               <MenuFoldOutlined 
                 onClick={() => setCollapsed(true)} 
-                style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', cursor: 'pointer', marginLeft: 'auto' }} 
+                style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', cursor: 'pointer', marginLeft: 'auto', flexShrink: 0 }} 
               />
             </div>
           )}
