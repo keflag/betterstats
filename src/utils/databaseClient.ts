@@ -3,11 +3,20 @@
  * @description 前端数据库服务客户端，用于与后端数据库API通信
  * @author keflag
  * @createDate 2026-03-08 09:42:20
- * @lastUpdateDate 2026-03-08 09:42:20
+ * @lastUpdateDate 2026-03-08 09:46:26
  * @version 1.0.0
  */
 
-const API_BASE_URL = 'http://localhost:17342';
+// 从服务器配置文件导入配置
+// 注意：实际项目中应该通过环境变量或构建时注入
+const SERVER_PORT = 17342;
+const API_BASE_URL = `http://localhost:${SERVER_PORT}`;
+
+/**
+ * @constant VALID_IDENTIFIER_REGEX
+ * @description 有效的标识符正则表达式（表名、列名）
+ */
+const VALID_IDENTIFIER_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
 
 /**
  * @interface QueryResult
@@ -149,8 +158,7 @@ async function getRecordById(tableName: string, id: number): Promise<SingleRecor
  * @return boolean 是否合法
  */
 function validateTableName(tableName: string): boolean {
-    const validTableNameRegex = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
-    return validTableNameRegex.test(tableName);
+    return VALID_IDENTIFIER_REGEX.test(tableName);
 }
 
 /**
@@ -160,8 +168,7 @@ function validateTableName(tableName: string): boolean {
  * @return boolean 是否合法
  */
 function validateColumnName(columnName: string): boolean {
-    const validColumnNameRegex = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
-    return validColumnNameRegex.test(columnName);
+    return VALID_IDENTIFIER_REGEX.test(columnName);
 }
 
 // 导出数据库客户端API
