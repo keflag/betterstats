@@ -3,12 +3,12 @@
  * @description Umi应用入口，配置全局Provider
  * @author keflag
  * @createDate 2026-03-08 11:16:31
- * @lastUpdateDate 2026-03-08 11:16:31
- * @version 2.0.0
+ * @lastUpdateDate 2026-03-08 11:25:00
+ * @version 2.1.0
  */
 
 import React from 'react';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
 
 /**
  * @componentName Root
