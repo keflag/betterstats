@@ -3,7 +3,7 @@
  * @description 前端数据库服务客户端，用于与后端数据库API通信
  * @author keflag
  * @createDate 2026-03-08 09:42:20
- * @lastUpdateDate 2026-03-08 09:46:26
+ * @lastUpdateDate 2026-03-08 09:50:00
  * @version 1.0.0
  */
 
@@ -17,6 +17,45 @@ const API_BASE_URL = `http://localhost:${SERVER_PORT}`;
  * @description 有效的标识符正则表达式（表名、列名）
  */
 const VALID_IDENTIFIER_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+
+/**
+ * @constant TOKEN_HEADER
+ * @description Token请求头名称
+ */
+const TOKEN_HEADER = 'x-pgsql-token';
+
+/**
+ * @variable authToken
+ * @description 认证token，需要通过setAuthToken设置
+ */
+let authToken: string | null = null;
+
+/**
+ * @functionName setAuthToken
+ * @description 设置认证token
+ * @params:token string 认证token
+ * @example setAuthToken('your-secret-token');
+ */
+function setAuthToken(token: string): void {
+    authToken = token;
+}
+
+/**
+ * @functionName getAuthHeaders
+ * @description 获取包含认证信息的请求头
+ * @return Record<string, string> 请求头对象
+ */
+function getAuthHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+    };
+
+    if (authToken) {
+        headers[TOKEN_HEADER] = authToken;
+    }
+
+    return headers;
+}
 
 /**
  * @interface QueryResult
@@ -76,9 +115,7 @@ async function checkHealth(): Promise<boolean> {
 async function executeQuery(sql: string, params: any[] = []): Promise<QueryResult> {
     const response = await fetch(`${API_BASE_URL}/api/query`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ sql, params }),
     });
 
@@ -119,7 +156,10 @@ async function getTableData(
     }
 
     const response = await fetch(
-        `${API_BASE_URL}/api/table/${encodeURIComponent(tableName)}?${queryParams}`
+        `${API_BASE_URL}/api/table/${encodeURIComponent(tableName)}?${queryParams}`,
+        {
+            headers: getAuthHeaders(),
+        }
     );
 
     if (!response.ok) {
@@ -140,7 +180,10 @@ async function getTableData(
  */
 async function getRecordById(tableName: string, id: number): Promise<SingleRecordResult> {
     const response = await fetch(
-        `${API_BASE_URL}/api/table/${encodeURIComponent(tableName)}/${id}`
+        `${API_BASE_URL}/api/table/${encodeURIComponent(tableName)}/${id}`,
+        {
+            headers: getAuthHeaders(),
+        }
     );
 
     if (!response.ok) {
@@ -173,6 +216,7 @@ function validateColumnName(columnName: string): boolean {
 
 // 导出数据库客户端API
 export const databaseClient = {
+    setAuthToken,
     checkHealth,
     executeQuery,
     getTableData,
