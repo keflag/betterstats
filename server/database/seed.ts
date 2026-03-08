@@ -157,10 +157,12 @@ export async function seedDatabase(pool: Pool): Promise<void> {
         // 5. 创建学生信息
         console.log('创建学生信息...');
         const studentNames = ['张三', '李四', '王五', '赵六', '钱七'];
+        const studentAccounts = ['student1', 'student2', 'student3', 'student4', 'student5'];
         
         for (let i = 0; i < studentUuids.length; i++) {
             const studentUserUuid = studentUuids[i];
             const studentName = studentNames[i];
+            const studentAccount = studentAccounts[i];
             const studentNo = `STU2024${String(i + 1).padStart(3, '0')}`;
             
             await client.query(
@@ -177,7 +179,7 @@ export async function seedDatabase(pool: Pool): Promise<void> {
                     '1 班',
                     schoolUuid,
                     2024,
-                    `${account}@test.com`,
+                    `${studentAccount}@test.com`,
                     'available'
                 ]
             );
