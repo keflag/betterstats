@@ -7,7 +7,7 @@
  * @version 1.0.0
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Layout, Menu, Typography } from 'antd';
 import {
   DashboardOutlined,
@@ -15,6 +15,8 @@ import {
   HomeOutlined,
   BarChartOutlined,
   SettingOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
 } from '@ant-design/icons';
 import { useLocation, history } from 'umi';
 import { useAuth, UserRole } from '@/contexts/AuthContext';
@@ -27,6 +29,7 @@ const { Text } = Typography;
  * @description 主布局组件
  */
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const { hasRole } = useAuth();
 
@@ -136,8 +139,16 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider
+        collapsible
+        collapsed={collapsed}
+        collapsedWidth={48}
         theme="light"
         style={{
+          height: '100vh',
+          position: 'sticky',
+          top: 0,
+          left: 0,
+          overflow: 'auto',
           boxShadow: '2px 0 8px rgba(0,0,0,0.1)',
         }}
       >
@@ -150,9 +161,13 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             borderBottom: '1px solid #f0f0f0',
           }}
         >
-          <Text strong style={{ fontSize: 18, color: '#1890ff' }}>
-            BetterStats
-          </Text>
+          {collapsed ? (
+            <MenuFoldOutlined onClick={() => setCollapsed(!collapsed)} style={{ fontSize: 18, color: '#1890ff', cursor: 'pointer' }} />
+          ) : (
+            <Text strong style={{ fontSize: 18, color: '#1890ff', cursor: 'pointer' }} onClick={() => setCollapsed(!collapsed)}>
+              BetterStats
+            </Text>
+          )}
         </div>
         <Menu
           mode="inline"
@@ -164,11 +179,12 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       </Sider>
       <Content
         style={{
-          margin: 24,
+          margin: '16px',
           padding: 24,
           background: '#fff',
           borderRadius: 8,
-          minHeight: 280,
+          minHeight: 'calc(100vh - 32px)',
+          overflow: 'auto',
         }}
       >
         {children}
