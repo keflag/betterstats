@@ -157,7 +157,6 @@ export async function seedDatabase(pool: Pool): Promise<void> {
         // 5. 创建学生信息
         console.log('创建学生信息...');
         const studentNames = ['张三', '李四', '王五', '赵六', '钱七'];
-        const studentAccounts = ['student1', 'student2', 'student3', 'student4', 'student5'];
         
         for (let i = 0; i < studentUuids.length; i++) {
             const studentUserUuid = studentUuids[i];
