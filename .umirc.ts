@@ -5,7 +5,6 @@ export default defineConfig({
     { path: "/", component: "login" },
     { path: "/login", component: "login" },
     { path: "/home", component: "home" },
-    { path: "/docs", component: "docs" },
   ],
   npmClient: 'pnpm',
 });
