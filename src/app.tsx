@@ -21,10 +21,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 };
 
-const App = (props: { children: React.ReactNode }) => {
+const App: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <AuthProvider>
-      {props.children}
+      {children}
     </AuthProvider>
   );
 };
