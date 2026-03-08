@@ -3,7 +3,7 @@
  * @description 安全的数据库服务，提供PostgreSQL数据库访问API，端口17342
  * @author keflag
  * @createDate 2026-03-08 09:38:44
- * @lastUpdateDate 2026-03-08 10:06:11
+ * @lastUpdateDate 2026-03-08 10:18:58
  * @version 2.0.0
  */
 
@@ -187,7 +187,7 @@ app.get('/api/table/:tableName', async (req: Request, res: Response, next: NextF
         const { page = '1', limit = '10', orderBy, order = 'ASC' } = req.query;
         
         // 验证表名
-        if (!validateTableName(tableName)) {
+        if (!validateTableName(tableName as string)) {
             return res.status(400).json({ error: '无效的表名' });
         }
         
@@ -240,12 +240,12 @@ app.get('/api/table/:tableName/:id', async (req: Request, res: Response, next: N
         const { tableName, id } = req.params;
         
         // 验证表名
-        if (!validateTableName(tableName)) {
+        if (!validateTableName(tableName as string)) {
             return res.status(400).json({ error: '无效的表名' });
         }
         
         // 验证ID是否为数字
-        const numericId = parseInt(id, 10);
+        const numericId = parseInt(id as string, 10);
         if (isNaN(numericId)) {
             return res.status(400).json({ error: '无效的ID' });
         }
