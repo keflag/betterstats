@@ -3,7 +3,7 @@
  * @description 安全的数据库服务，提供PostgreSQL数据库访问API，端口17342
  * @author keflag
  * @createDate 2026-03-08 09:38:44
- * @lastUpdateDate 2026-03-08 09:38:44
+ * @lastUpdateDate 2026-03-08 09:45:35
  * @version 1.0.0
  */
 
@@ -13,6 +13,7 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
+import SERVER_CONFIG from './config';
 
 // 加载环境变量
 dotenv.config();
@@ -29,9 +30,9 @@ function createPool(): Pool {
         database: process.env.DB_NAME || 'betterstats',
         user: process.env.DB_USER || 'postgres',
         password: process.env.DB_PASSWORD || '',
-        max: 20,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000,
+        max: SERVER_CONFIG.DB_POOL.MAX_CONNECTIONS,
+        idleTimeoutMillis: SERVER_CONFIG.DB_POOL.IDLE_TIMEOUT_MS,
+        connectionTimeoutMillis: SERVER_CONFIG.DB_POOL.CONNECTION_TIMEOUT_MS,
     });
 }
 
@@ -44,8 +45,7 @@ function createPool(): Pool {
  * @example validateTableName('users; DROP TABLE users;') // false
  */
 function validateTableName(tableName: string): boolean {
-    const validTableNameRegex = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
-    return validTableNameRegex.test(tableName);
+    return SERVER_CONFIG.SECURITY.VALID_IDENTIFIER_REGEX.test(tableName);
 }
 
 /**
@@ -55,8 +55,7 @@ function validateTableName(tableName: string): boolean {
  * @return boolean 是否合法
  */
 function validateColumnName(columnName: string): boolean {
-    const validColumnNameRegex = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
-    return validColumnNameRegex.test(columnName);
+    return SERVER_CONFIG.SECURITY.VALID_IDENTIFIER_REGEX.test(columnName);
 }
 
 /**
@@ -76,25 +75,25 @@ function sanitizeInput(input: string): string {
 
 // 创建Express应用
 const app = express();
-const PORT = 17342;
+const PORT = SERVER_CONFIG.PORT;
 
 // 安全中间件
 app.use(helmet());
 app.use(cors({
     origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:8000'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: SERVER_CONFIG.CORS.METHODS,
+    allowedHeaders: SERVER_CONFIG.CORS.ALLOWED_HEADERS,
 }));
 
 // 速率限制
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15分钟
-    max: 100, // 每个IP最多100个请求
+    windowMs: SERVER_CONFIG.RATE_LIMIT.WINDOW_MS,
+    max: SERVER_CONFIG.RATE_LIMIT.MAX_REQUESTS,
     message: { error: '请求过于频繁，请稍后再试' },
 });
 app.use(limiter);
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: SERVER_CONFIG.SECURITY.MAX_BODY_SIZE }));
 
 // 创建数据库连接池
 const pool = createPool();
@@ -255,7 +254,7 @@ app.get('/api/table/:tableName/:id', async (req: Request, res: Response, next: N
 // 启动服务器
 app.listen(PORT, () => {
     console.log(`数据库服务已启动，端口: ${PORT}`);
-    console.log(`健康检查: http://localhost:${PORT}/health`);
+    console.log(`健康检查: ${SERVER_CONFIG.API_BASE_URL}/health`);
 });
 
 // 优雅关闭
