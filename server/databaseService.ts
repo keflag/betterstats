@@ -14,8 +14,8 @@ import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
-import SERVER_CONFIG from './config.js';
-import { authenticateCookie, initSession, logout } from './auth.js';
+import SERVER_CONFIG from './config';
+import { authenticateCookie, initSession, logout } from './auth';
 
 // 加载环境变量
 dotenv.config();
