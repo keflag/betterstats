@@ -12,10 +12,10 @@ import { Card, Row, Col, Statistic, Typography, Badge } from 'antd';
 import {
   UserOutlined,
   TeamOutlined,
-  SchoolOutlined,
   BarChartOutlined,
   RiseOutlined,
   FallOutlined,
+  HomeOutlined,
 } from '@ant-design/icons';
 import { useAuth, UserRole } from '@/contexts/AuthContext';
 import MainLayout from '@/components/Layout';
@@ -23,7 +23,7 @@ import { AuthGuard } from '@/components/AuthGuard';
 
 const { Title, Text } = Typography;
 
-// 移除未使用的图标
+
 
 /**
  * @componentName HomePage
@@ -61,7 +61,7 @@ const HomePage: React.FC = () => {
     // 平台管理员统计
     if (hasRole(UserRole.PLATFORM_ADMIN)) {
       return [
-        { title: '学校总数', value: 128, icon: <SchoolOutlined />, color: '#1890ff' },
+        { title: '学校总数', value: 128, icon: <HomeOutlined />, color: '#1890ff' },
         { title: '用户总数', value: 5680, icon: <UserOutlined />, color: '#52c41a' },
         { title: '教师人数', value: 420, icon: <TeamOutlined />, color: '#faad14' },
         { title: '学生人数', value: 5260, icon: <TeamOutlined />, color: '#eb2f96' },
