@@ -3,7 +3,7 @@
  * @description 服务器配置文件，集中管理所有配置项
  * @author keflag
  * @createDate 2026-03-08 09:44:27
- * @lastUpdateDate 2026-03-08 09:44:27
+ * @lastUpdateDate 2026-03-08 09:48:05
  * @version 1.0.0
  */
 
@@ -61,6 +61,15 @@ export const SERVER_CONFIG = {
     SECURITY: {
         MAX_BODY_SIZE: '10mb',
         VALID_IDENTIFIER_REGEX: /^[a-zA-Z_][a-zA-Z0-9_]*$/,
+    },
+
+    /**
+     * @property AUTH
+     * @description 认证配置
+     */
+    AUTH: {
+        TOKEN_HEADER: 'x-pgsql-token',
+        TOKEN_KEY: 'pgsql_token',
     },
 };
 
