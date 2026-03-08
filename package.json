@@ -7,8 +7,8 @@
     "postinstall": "umi setup",
     "setup": "umi setup",
     "start": "npm run dev",
-    "server": "ts-node server/databaseService.ts",
-    "server:dev": "ts-node-dev --respawn server/databaseService.ts"
+    "server": "ts-node --esm server/databaseService.ts",
+    "server:dev": "ts-node-dev --esm --respawn server/databaseService.ts"
   },
   "dependencies": {
     "@types/cookie-parser": "^1.4.10",
@@ -32,5 +32,9 @@
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.0.3"
+  },
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
   }
 }
