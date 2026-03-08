@@ -1,10 +1,10 @@
 /**
  * @fileName auth.ts
- * @description 基于HTTP-Only Cookie的认证模块，支持一次性token
+ * @description 基于HTTP-Only + Secure Cookie的认证模块
  * @author keflag
  * @createDate 2026-03-08 09:53:42
- * @lastUpdateDate 2026-03-08 10:04:49
- * @version 3.0.0
+ * @lastUpdateDate 2026-03-08 10:10:29
+ * @version 4.0.0
  */
 
 import jwt from 'jsonwebtoken';
@@ -96,16 +96,17 @@ function verifyToken(token: string): JwtPayload | null {
 
 /**
  * @functionName setTokenCookie
- * @description 设置HTTP-Only Cookie
+ * @description 设置HTTP-Only + Secure Cookie
  * @params:res Response Express响应对象
  * @params:token string JWT Token
  */
 function setTokenCookie(res: Response, token: string): void {
+    // 强制使用 HttpOnly + Secure 架构
     res.cookie(COOKIE_NAME, token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 60 * 1000, // 60秒
+        httpOnly: true,      // 禁止JavaScript访问
+        secure: true,        // 仅HTTPS传输
+        sameSite: 'strict',  // 防止CSRF攻击
+        maxAge: 60 * 1000,   // 60秒有效期
         path: '/',
     });
 }
@@ -118,7 +119,7 @@ function setTokenCookie(res: Response, token: string): void {
 function clearTokenCookie(res: Response): void {
     res.clearCookie(COOKIE_NAME, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: true,
         sameSite: 'strict',
         path: '/',
     });
@@ -173,12 +174,12 @@ function initSession(req: Request, res: Response): void {
     // 生成初始token
     const token = generateToken();
     
-    // 设置HTTP-Only Cookie
+    // 设置HTTP-Only + Secure Cookie
     setTokenCookie(res, token);
     
     res.json({
         success: true,
-        message: '会话已初始化，token已设置到HTTP-Only Cookie',
+        message: '会话已初始化，token已设置到HTTP-Only + Secure Cookie',
     });
 }
 
