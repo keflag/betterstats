@@ -3,8 +3,8 @@
  * @description 前端数据库服务客户端，用于与后端数据库API通信
  * @author keflag
  * @createDate 2026-03-08 09:42:20
- * @lastUpdateDate 2026-03-08 09:56:04
- * @version 1.0.0
+ * @lastUpdateDate 2026-03-08 10:00:21
+ * @version 2.0.0
  */
 
 // 从服务器配置文件导入配置
@@ -81,13 +81,32 @@ function getAuthHeaders(): Record<string, string> {
 }
 
 /**
+ * @functionName handleResponse
+ * @description 处理响应，自动提取并保存nextToken
+ * @params:response Response fetch响应对象
+ * @return Promise<any> 响应体
+ */
+async function handleResponse(response: Response): Promise<any> {
+    const data = await response.json();
+    
+    // 自动保存服务端返回的新token
+    if (data.nextToken) {
+        setAuthToken(data.nextToken);
+        // 删除nextToken，不暴露给调用方
+        delete data.nextToken;
+    }
+    
+    return data;
+}
+
+/**
  * @interface LoginResult
  * @description 登录结果接口
  */
 interface LoginResult {
     success: boolean;
     token: string;
-    expiresIn: number;
+    message: string;
 }
 
 /**
@@ -123,7 +142,7 @@ interface SingleRecordResult {
 
 /**
  * @functionName login
- * @description 登录获取JWT token
+ * @description 登录获取初始JWT token
  * @params:password string 数据库密码
  * @return Promise<LoginResult> 登录结果
  * @example const result = await login('your-password');
@@ -180,7 +199,7 @@ async function executeQuery(sql: string, params: any[] = []): Promise<QueryResul
 
     if (response.status === 401 || response.status === 403) {
         clearAuthToken();
-        throw new Error('认证已过期，请重新登录');
+        throw new Error('认证失败，请重新登录');
     }
 
     if (!response.ok) {
@@ -188,7 +207,7 @@ async function executeQuery(sql: string, params: any[] = []): Promise<QueryResul
         throw new Error(error.error || '查询执行失败');
     }
 
-    return response.json();
+    return handleResponse(response);
 }
 
 /**
@@ -228,7 +247,7 @@ async function getTableData(
 
     if (response.status === 401 || response.status === 403) {
         clearAuthToken();
-        throw new Error('认证已过期，请重新登录');
+        throw new Error('认证失败，请重新登录');
     }
 
     if (!response.ok) {
@@ -236,7 +255,7 @@ async function getTableData(
         throw new Error(error.error || '获取表数据失败');
     }
 
-    return response.json();
+    return handleResponse(response);
 }
 
 /**
@@ -257,7 +276,7 @@ async function getRecordById(tableName: string, id: number): Promise<SingleRecor
 
     if (response.status === 401 || response.status === 403) {
         clearAuthToken();
-        throw new Error('认证已过期，请重新登录');
+        throw new Error('认证失败，请重新登录');
     }
 
     if (!response.ok) {
@@ -265,7 +284,7 @@ async function getRecordById(tableName: string, id: number): Promise<SingleRecor
         throw new Error(error.error || '获取记录失败');
     }
 
-    return response.json();
+    return handleResponse(response);
 }
 
 /**
