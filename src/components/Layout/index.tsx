@@ -12,7 +12,7 @@ import { Layout, Menu, Avatar, Dropdown, Badge, Space, Typography } from 'antd';
 import {
   DashboardOutlined,
   TeamOutlined,
-  SchoolOutlined,
+  HomeOutlined,
   BarChartOutlined,
   SettingOutlined,
   UserOutlined,
@@ -54,7 +54,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       items.push(
         {
           key: '/schools',
-          icon: <SchoolOutlined />,
+          icon: <HomeOutlined />,
           label: '学校管理',
         },
         {
