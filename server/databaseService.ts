@@ -16,6 +16,8 @@ import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import SERVER_CONFIG from './config';
 import { authenticateCookie, initSession, logout } from './auth';
+import authRoutes from './routes/authRoutes';
+import { setPool } from './services/authService';
 
 // 加载环境变量
 dotenv.config();
@@ -101,6 +103,9 @@ app.use(cookieParser());
 // 创建数据库连接池
 const pool = createPool();
 
+// 设置 authService 的数据库连接池
+setPool(pool);
+
 /**
  * @functionName executeQuery
  * @description 执行参数化查询，防止SQL注入
@@ -137,7 +142,10 @@ app.get('/health', (req: Request, res: Response) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// 初始化会话（无需token，设置HTTP-Only Cookie）
+// 认证路由（登录、登出、刷新 Token、获取用户信息）
+app.use('/api/auth', authRoutes);
+
+// 初始化会话（无需 token，设置 HTTP-Only Cookie）
 app.post('/api/init', initSession);
 
 // 退出登录
