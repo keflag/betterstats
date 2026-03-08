@@ -7,10 +7,14 @@
  * @version 1.0.0
  */
 
+import dotenv from 'dotenv';
 import { Pool } from 'pg';
 import * as fs from 'fs';
 import * as path from 'path';
 import seedDatabase from './seed';
+
+// 加载环境变量
+dotenv.config();
 
 const DB_CONFIG = {
     host: process.env.DB_HOST || 'localhost',

@@ -136,11 +136,16 @@ export async function seedDatabase(pool: Pool): Promise<void> {
         
         // 4. 创建教师信息
         console.log('创建教师信息...');
-        const teacherUser = teacherResult.rows[0] || await client.query(
-            'SELECT uuid FROM users WHERE account = $1',
-            ['teacher1']
-        );
-        const teacherUuid = teacherUser.rows[0].uuid;
+        let teacherUuid: string;
+        if (teacherResult.rows.length > 0) {
+            teacherUuid = teacherResult.rows[0].uuid;
+        } else {
+            const teacherQuery = await client.query(
+                'SELECT uuid FROM users WHERE account = $1',
+                ['teacher1']
+            );
+            teacherUuid = teacherQuery.rows[0].uuid;
+        }
         
         await client.query(
             `INSERT INTO teachers (user_uuid, name, gender, school_uuid, email, subjects, status)
