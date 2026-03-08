@@ -151,7 +151,7 @@ export async function seedDatabase(pool: Pool): Promise<void> {
             `INSERT INTO teachers (user_uuid, name, gender, school_uuid, email, subjects, status)
              VALUES ($1, $2, $3, $4, $5, $6, $7)
              ON CONFLICT (user_uuid) DO NOTHING`,
-            [teacherUuid, '张老师', '男', schoolUuid, 'teacher1@test.com', ['数学'], 'available']
+            [teacherUuid, '张老师', '男', schoolUuid, 'teacher1@test.com', JSON.stringify(['数学']), 'available']
         );
         
         // 5. 创建学生信息
