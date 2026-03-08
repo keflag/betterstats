@@ -1,30 +1,25 @@
 /**
  * @fileName index.tsx
- * @description 布局组件，包含Sidebar、Header和Content
+ * @description 布局组件，包含 Sidebar 和 Content
  * @author keflag
  * @createDate 2026-03-08 11:13:32
- * @lastUpdateDate 2026-03-08 11:13:32
+ * @lastUpdateDate 2026-03-08 12:30:00
  * @version 1.0.0
  */
 
-import React, { useState } from 'react';
-import { Layout, Menu, Avatar, Dropdown, Badge, Space, Typography } from 'antd';
+import React from 'react';
+import { Layout, Menu, Typography } from 'antd';
 import {
   DashboardOutlined,
   TeamOutlined,
   HomeOutlined,
   BarChartOutlined,
   SettingOutlined,
-  UserOutlined,
-  LogoutOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  BellOutlined,
 } from '@ant-design/icons';
 import { useLocation, history } from 'umi';
 import { useAuth, UserRole } from '@/contexts/AuthContext';
 
-const { Header, Sider, Content } = Layout;
+const { Sider, Content } = Layout;
 const { Text } = Typography;
 
 /**
@@ -32,9 +27,8 @@ const { Text } = Typography;
  * @description 主布局组件
  */
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
-  const { user, logout, hasRole } = useAuth();
+  const { hasRole } = useAuth();
 
   /**
    * @functionName getMenuItems
@@ -139,49 +133,9 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     history.push(key);
   };
 
-  /**
-   * @functionName handleLogout
-   * @description 处理登出
-   */
-  const handleLogout = async () => {
-    await logout();
-    history.push('/login');
-  };
-
-  /**
-   * @functionName getRoleName
-   * @description 获取角色名称
-   */
-  const getRoleName = (role: UserRole) => {
-    const roleMap: Record<UserRole, string> = {
-      [UserRole.PLATFORM_ADMIN]: '平台管理员',
-      [UserRole.SCHOOL_ADMIN]: '学校管理员',
-      [UserRole.TEACHER]: '教师',
-      [UserRole.STUDENT]: '学生',
-    };
-    return roleMap[role] || role;
-  };
-
-  const userMenuItems = [
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: '个人中心',
-    },
-    {
-      key: 'logout',
-      icon: <LogoutOutlined />,
-      label: '退出登录',
-      onClick: handleLogout,
-    },
-  ];
-
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider
-        trigger={null}
-        collapsible
-        collapsed={collapsed}
         theme="light"
         style={{
           boxShadow: '2px 0 8px rgba(0,0,0,0.1)',
@@ -196,8 +150,8 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             borderBottom: '1px solid #f0f0f0',
           }}
         >
-          <Text strong style={{ fontSize: collapsed ? 14 : 18, color: '#1890ff' }}>
-            {collapsed ? 'BS' : 'BetterStats'}
+          <Text strong style={{ fontSize: 18, color: '#1890ff' }}>
+            BetterStats
           </Text>
         </div>
         <Menu
@@ -208,60 +162,17 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           style={{ borderRight: 0 }}
         />
       </Sider>
-      <Layout>
-        <Header
-          style={{
-            background: '#fff',
-            padding: '0 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          }}
-        >
-          <div
-            style={{
-              cursor: 'pointer',
-              fontSize: 18,
-              color: '#666',
-            }}
-            onClick={() => setCollapsed(!collapsed)}
-          >
-            {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-          </div>
-          <Space size={24}>
-            <Badge count={5} size="small">
-              <BellOutlined style={{ fontSize: 20, color: '#666', cursor: 'pointer' }} />
-            </Badge>
-            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
-              <Space style={{ cursor: 'pointer' }}>
-                <Avatar icon={<UserOutlined />} />
-                {!collapsed && (
-                  <div style={{ lineHeight: 1.2 }}>
-                    <Text strong style={{ display: 'block' }}>
-                      {user?.account}
-                    </Text>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      {user?.role && getRoleName(user.role)}
-                    </Text>
-                  </div>
-                )}
-              </Space>
-            </Dropdown>
-          </Space>
-        </Header>
-        <Content
-          style={{
-            margin: 24,
-            padding: 24,
-            background: '#fff',
-            borderRadius: 8,
-            minHeight: 280,
-          }}
-        >
-          {children}
-        </Content>
-      </Layout>
+      <Content
+        style={{
+          margin: 24,
+          padding: 24,
+          background: '#fff',
+          borderRadius: 8,
+          minHeight: 280,
+        }}
+      >
+        {children}
+      </Content>
     </Layout>
   );
 };
