@@ -8,7 +8,9 @@
     "setup": "umi setup",
     "start": "npm run dev",
     "server": "tsx server/databaseService.ts",
-    "server:dev": "tsx watch server/databaseService.ts"
+    "server:dev": "tsx watch server/databaseService.ts",
+    "db:init": "tsx server/database/init-db.ts",
+    "db:seed": "tsx server/database/seed.ts"
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
