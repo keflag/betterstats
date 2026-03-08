@@ -86,8 +86,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
           await fetchUserInfo(savedToken);
         } catch (error) {
+          // 初始化时静默失败，不显示错误提示
           localStorage.removeItem(TOKEN_KEY);
           setToken(null);
+          setUser(null);
         }
       }
       setIsLoading(false);

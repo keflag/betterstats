@@ -57,7 +57,10 @@ const LoginPage: React.FC = () => {
       );
 
       if (success) {
-        history.push('/home');
+        // 等待状态更新后再跳转
+        setTimeout(() => {
+          history.push('/home');
+        }, 300);
       }
     } finally {
       setLoading(false);
