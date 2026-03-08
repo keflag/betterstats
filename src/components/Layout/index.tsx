@@ -210,7 +210,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, background: '#001529' }}>
             <Divider style={{ margin: '8px 0', borderColor: 'rgba(255,255,255,0.1)' }} />
             <div style={{ textAlign: 'center' }}>
-              <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.45) }}>
+              <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>
                 v1.0.0
               </Text>
             </div>
