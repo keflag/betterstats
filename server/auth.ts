@@ -3,8 +3,8 @@
  * @description JWT认证模块，提供一次性token生成和验证功能
  * @author keflag
  * @createDate 2026-03-08 09:53:42
- * @lastUpdateDate 2026-03-08 09:58:49
- * @version 2.0.0
+ * @lastUpdateDate 2026-03-08 10:02:49
+ * @version 2.1.0
  */
 
 import jwt from 'jsonwebtoken';
@@ -134,18 +134,18 @@ function authenticateJwt(req: Request, res: Response, next: NextFunction): void 
 
 /**
  * @functionName login
- * @description 登录接口处理函数，验证密码后签发token
+ * @description 登录接口处理函数，验证API密码后签发token
  * @params:req Request Express请求对象
  * @params:res Response Express响应对象
  */
 function login(req: Request, res: Response): void {
     const { password } = req.body;
-    const expectedPassword = process.env.DB_PASSWORD;
+    const expectedPassword = process.env.API_PASSWORD;
 
     if (!expectedPassword) {
         res.status(500).json({
             error: '服务器配置错误',
-            message: '未配置数据库密码',
+            message: '未配置API访问密码',
         });
         return;
     }
