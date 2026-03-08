@@ -3,12 +3,12 @@
  * @description 布局组件，包含 Sidebar 和 Content
  * @author keflag
  * @createDate 2026-03-08 11:13:32
- * @lastUpdateDate 2026-03-08 12:30:00
- * @version 1.0.0
+ * @lastUpdateDate 2026-03-08 12:45:00
+ * @version 2.0.0
  */
 
 import React, { useState } from 'react';
-import { Layout, Menu, Typography } from 'antd';
+import { Layout, Menu, Typography, Divider, Tooltip } from 'antd';
 import {
   DashboardOutlined,
   TeamOutlined,
@@ -17,6 +17,7 @@ import {
   SettingOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons';
 import { useLocation, history } from 'umi';
 import { useAuth, UserRole } from '@/contexts/AuthContext';
@@ -65,6 +66,9 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           label: '数据管理',
         },
         {
+          type: 'divider',
+        },
+        {
           key: '/settings',
           icon: <SettingOutlined />,
           label: '系统设置',
@@ -84,6 +88,9 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           key: '/school-data',
           icon: <BarChartOutlined />,
           label: '本校数据',
+        },
+        {
+          type: 'divider',
         },
         {
           key: '/school-settings',
@@ -137,19 +144,20 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   };
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
       <Sider
         collapsible
         collapsed={collapsed}
-        collapsedWidth={48}
-        theme="light"
+        collapsedWidth={80}
+        width={256}
+        theme="dark"
         style={{
           height: '100vh',
           position: 'sticky',
           top: 0,
           left: 0,
-          overflow: 'auto',
-          boxShadow: '2px 0 8px rgba(0,0,0,0.1)',
+          overflow: 'hidden',
+          boxShadow: '2px 0 8px rgba(0,0,0,0.15)',
         }}
       >
         <div
@@ -158,25 +166,57 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            borderBottom: '1px solid #f0f0f0',
+            background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+            boxShadow: '0 2px 8px rgba(24,144,255,0.3)',
           }}
         >
           {collapsed ? (
-            <MenuFoldOutlined onClick={() => setCollapsed(!collapsed)} style={{ fontSize: 18, color: '#1890ff', cursor: 'pointer' }} />
+            <Tooltip title="展开菜单" placement="right">
+              <AppstoreOutlined 
+                onClick={() => setCollapsed(false)} 
+                style={{ fontSize: 24, color: '#fff', cursor: 'pointer' }} 
+              />
+            </Tooltip>
           ) : (
-            <Text strong style={{ fontSize: 18, color: '#1890ff', cursor: 'pointer' }} onClick={() => setCollapsed(!collapsed)}>
-              BetterStats
-            </Text>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <AppstoreOutlined style={{ fontSize: 24, color: '#fff' }} />
+              <Text strong style={{ fontSize: 18, color: '#fff', fontWeight: 600 }}>
+                BetterStats
+              </Text>
+              <MenuFoldOutlined 
+                onClick={() => setCollapsed(true)} 
+                style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', cursor: 'pointer', marginLeft: 'auto' }} 
+              />
+            </div>
           )}
         </div>
+        
         <Menu
           mode="inline"
           selectedKeys={[location.pathname]}
           items={getMenuItems()}
           onClick={handleMenuClick}
-          style={{ borderRight: 0 }}
+          theme="dark"
+          inlineCollapsed={collapsed}
+          style={{ 
+            borderRight: 0,
+            background: '#001529',
+            paddingTop: 8,
+          }}
         />
+        
+        {!collapsed && (
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, background: '#001529' }}>
+            <Divider style={{ margin: '8px 0', borderColor: 'rgba(255,255,255,0.1)' }} />
+            <div style={{ textAlign: 'center' }}>
+              <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.45) }}>
+                v1.0.0
+              </Text>
+            </div>
+          </div>
+        )}
       </Sider>
+      
       <Content
         style={{
           margin: '16px',
@@ -185,6 +225,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           borderRadius: 8,
           minHeight: 'calc(100vh - 32px)',
           overflow: 'auto',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
         }}
       >
         {children}
