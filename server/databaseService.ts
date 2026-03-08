@@ -3,7 +3,7 @@
  * @description 安全的数据库服务，提供PostgreSQL数据库访问API，端口17342
  * @author keflag
  * @createDate 2026-03-08 09:38:44
- * @lastUpdateDate 2026-03-08 09:45:35
+ * @lastUpdateDate 2026-03-08 09:48:48
  * @version 1.0.0
  */
 
@@ -95,6 +95,36 @@ app.use(limiter);
 
 app.use(express.json({ limit: SERVER_CONFIG.SECURITY.MAX_BODY_SIZE }));
 
+/**
+ * @functionName authenticateToken
+ * @description Token认证中间件，验证pgsql_token
+ * @params:req Request Express请求对象
+ * @params:res Response Express响应对象
+ * @params:next NextFunction Express下一个中间件函数
+ */
+function authenticateToken(req: Request, res: Response, next: NextFunction): void {
+    const token = req.headers[SERVER_CONFIG.AUTH.TOKEN_HEADER.toLowerCase()] as string;
+    const expectedToken = process.env[SERVER_CONFIG.AUTH.TOKEN_KEY];
+
+    if (!expectedToken) {
+        console.error('服务器未配置pgsql_token，请在.env文件中设置');
+        res.status(500).json({ error: '服务器配置错误' });
+        return;
+    }
+
+    if (!token) {
+        res.status(401).json({ error: '缺少认证token，请在请求头中添加x-pgsql-token' });
+        return;
+    }
+
+    if (token !== expectedToken) {
+        res.status(403).json({ error: '无效的认证token' });
+        return;
+    }
+
+    next();
+}
+
 // 创建数据库连接池
 const pool = createPool();
 
@@ -129,10 +159,13 @@ function errorHandler(err: ApiError, req: Request, res: Response, next: NextFunc
     });
 }
 
-// 健康检查接口
+// 健康检查接口（无需token）
 app.get('/health', (req: Request, res: Response) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// 以下接口需要token认证
+app.use(authenticateToken);
 
 // 查询接口 - 使用参数化查询防止SQL注入
 app.post('/api/query', async (req: Request, res: Response, next: NextFunction) => {
