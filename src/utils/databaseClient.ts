@@ -3,7 +3,7 @@
  * @description 前端数据库服务客户端，用于与后端数据库API通信
  * @author keflag
  * @createDate 2026-03-08 09:42:20
- * @lastUpdateDate 2026-03-08 09:50:00
+ * @lastUpdateDate 2026-03-08 09:56:04
  * @version 1.0.0
  */
 
@@ -19,25 +19,47 @@ const API_BASE_URL = `http://localhost:${SERVER_PORT}`;
 const VALID_IDENTIFIER_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
 
 /**
- * @constant TOKEN_HEADER
- * @description Token请求头名称
+ * @constant TOKEN_KEY
+ * @description 本地存储token的键名
  */
-const TOKEN_HEADER = 'x-pgsql-token';
+const TOKEN_KEY = 'betterstats_jwt_token';
 
 /**
  * @variable authToken
- * @description 认证token，需要通过setAuthToken设置
+ * @description 当前使用的JWT token
  */
 let authToken: string | null = null;
 
 /**
  * @functionName setAuthToken
  * @description 设置认证token
- * @params:token string 认证token
- * @example setAuthToken('your-secret-token');
+ * @params:token string JWT token
+ * @example setAuthToken('eyJhbGciOiJIUzI1NiIs...');
  */
 function setAuthToken(token: string): void {
     authToken = token;
+    localStorage.setItem(TOKEN_KEY, token);
+}
+
+/**
+ * @functionName getAuthToken
+ * @description 获取当前认证token
+ * @return string | null token或null
+ */
+function getAuthToken(): string | null {
+    if (!authToken) {
+        authToken = localStorage.getItem(TOKEN_KEY);
+    }
+    return authToken;
+}
+
+/**
+ * @functionName clearAuthToken
+ * @description 清除认证token
+ */
+function clearAuthToken(): void {
+    authToken = null;
+    localStorage.removeItem(TOKEN_KEY);
 }
 
 /**
@@ -50,11 +72,22 @@ function getAuthHeaders(): Record<string, string> {
         'Content-Type': 'application/json',
     };
 
-    if (authToken) {
-        headers[TOKEN_HEADER] = authToken;
+    const token = getAuthToken();
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
     }
 
     return headers;
+}
+
+/**
+ * @interface LoginResult
+ * @description 登录结果接口
+ */
+interface LoginResult {
+    success: boolean;
+    token: string;
+    expiresIn: number;
 }
 
 /**
@@ -89,6 +122,32 @@ interface SingleRecordResult {
 }
 
 /**
+ * @functionName login
+ * @description 登录获取JWT token
+ * @params:password string 数据库密码
+ * @return Promise<LoginResult> 登录结果
+ * @example const result = await login('your-password');
+ */
+async function login(password: string): Promise<LoginResult> {
+    const response = await fetch(`${API_BASE_URL}/api/login`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || '登录失败');
+    }
+
+    const result: LoginResult = await response.json();
+    setAuthToken(result.token);
+    return result;
+}
+
+/**
  * @functionName checkHealth
  * @description 检查数据库服务健康状态
  * @return Promise<boolean> 服务是否正常
@@ -118,6 +177,11 @@ async function executeQuery(sql: string, params: any[] = []): Promise<QueryResul
         headers: getAuthHeaders(),
         body: JSON.stringify({ sql, params }),
     });
+
+    if (response.status === 401 || response.status === 403) {
+        clearAuthToken();
+        throw new Error('认证已过期，请重新登录');
+    }
 
     if (!response.ok) {
         const error = await response.json();
@@ -162,6 +226,11 @@ async function getTableData(
         }
     );
 
+    if (response.status === 401 || response.status === 403) {
+        clearAuthToken();
+        throw new Error('认证已过期，请重新登录');
+    }
+
     if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || '获取表数据失败');
@@ -185,6 +254,11 @@ async function getRecordById(tableName: string, id: number): Promise<SingleRecor
             headers: getAuthHeaders(),
         }
     );
+
+    if (response.status === 401 || response.status === 403) {
+        clearAuthToken();
+        throw new Error('认证已过期，请重新登录');
+    }
 
     if (!response.ok) {
         const error = await response.json();
@@ -216,7 +290,10 @@ function validateColumnName(columnName: string): boolean {
 
 // 导出数据库客户端API
 export const databaseClient = {
+    login,
     setAuthToken,
+    getAuthToken,
+    clearAuthToken,
     checkHealth,
     executeQuery,
     getTableData,
