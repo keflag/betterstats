@@ -1,15 +1,14 @@
 /**
  * @fileName auth.ts
- * @description JWT认证模块，提供token生成和验证功能
+ * @description JWT认证模块，提供一次性token生成和验证功能
  * @author keflag
  * @createDate 2026-03-08 09:53:42
- * @lastUpdateDate 2026-03-08 09:53:42
- * @version 1.0.0
+ * @lastUpdateDate 2026-03-08 09:58:49
+ * @version 2.0.0
  */
 
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
-import SERVER_CONFIG from './config';
 
 /**
  * @interface JwtPayload
@@ -17,6 +16,7 @@ import SERVER_CONFIG from './config';
  */
 interface JwtPayload {
     iss: string;
+    jti: string;
     iat: number;
     exp: number;
 }
@@ -28,22 +28,24 @@ interface JwtPayload {
 const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-change-in-production';
 
 /**
- * @constant TOKEN_EXPIRY
- * @description Token过期时间（秒）
+ * @constant USED_TOKENS
+ * @description 已使用的token集合（内存存储，重启后清空）
  */
-const TOKEN_EXPIRY = 24 * 60 * 60; // 24小时
+const USED_TOKENS = new Set<string>();
 
 /**
  * @functionName generateToken
- * @description 生成JWT Token
+ * @description 生成一次性JWT Token
  * @return string JWT Token字符串
  * @example const token = generateToken();
  */
 function generateToken(): string {
+    const jti = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const payload: JwtPayload = {
         iss: 'betterstats-server',
+        jti,
         iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + TOKEN_EXPIRY,
+        exp: Math.floor(Date.now() / 1000) + 60, // 60秒有效期，足够单次请求
     };
 
     return jwt.sign(payload, JWT_SECRET);
@@ -51,14 +53,35 @@ function generateToken(): string {
 
 /**
  * @functionName verifyToken
- * @description 验证JWT Token
+ * @description 验证JWT Token（一次性使用）
  * @params:token string JWT Token字符串
  * @return JwtPayload | null 验证成功返回载荷，失败返回null
  * @example const payload = verifyToken(token);
  */
 function verifyToken(token: string): JwtPayload | null {
     try {
+        // 检查token是否已被使用
+        if (USED_TOKENS.has(token)) {
+            console.log('Token已被使用:', token.substring(0, 20) + '...');
+            return null;
+        }
+
         const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+        
+        // 标记token为已使用
+        USED_TOKENS.add(token);
+        
+        // 限制集合大小，防止内存泄漏（保留最近10000个）
+        if (USED_TOKENS.size > 10000) {
+            const iterator = USED_TOKENS.values();
+            for (let i = 0; i < 1000; i++) {
+                const oldToken = iterator.next().value;
+                if (oldToken) {
+                    USED_TOKENS.delete(oldToken);
+                }
+            }
+        }
+        
         return decoded;
     } catch (error) {
         return null;
@@ -67,7 +90,7 @@ function verifyToken(token: string): JwtPayload | null {
 
 /**
  * @functionName authenticateJwt
- * @description JWT认证中间件
+ * @description JWT认证中间件（一次性token）
  * @params:req Request Express请求对象
  * @params:res Response Express响应对象
  * @params:next NextFunction Express下一个中间件函数
@@ -98,13 +121,14 @@ function authenticateJwt(req: Request, res: Response, next: NextFunction): void 
     if (!payload) {
         res.status(403).json({
             error: '无效的token',
-            message: 'token已过期或签名无效',
+            message: 'token已过期、签名无效或已被使用',
         });
         return;
     }
 
     // 将解码后的信息附加到请求对象
     (req as any).jwtPayload = payload;
+    (req as any).usedToken = token;
     next();
 }
 
@@ -138,8 +162,29 @@ function login(req: Request, res: Response): void {
     res.json({
         success: true,
         token,
-        expiresIn: TOKEN_EXPIRY,
+        message: '请在下一次请求中使用此token，使用后立即失效',
     });
+}
+
+/**
+ * @functionName refreshTokenMiddleware
+ * @description 刷新token中间件，在响应中返回新token
+ * @params:req Request Express请求对象
+ * @params:res Response Express响应对象
+ * @params:next NextFunction Express下一个中间件函数
+ */
+function refreshTokenMiddleware(req: Request, res: Response, next: NextFunction): void {
+    const originalJson = res.json.bind(res);
+    
+    res.json = function(body: any) {
+        // 如果响应成功，附加新token
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+            body.nextToken = generateToken();
+        }
+        return originalJson(body);
+    };
+    
+    next();
 }
 
 export {
@@ -147,7 +192,8 @@ export {
     verifyToken,
     authenticateJwt,
     login,
-    TOKEN_EXPIRY,
+    refreshTokenMiddleware,
+    USED_TOKENS,
 };
 
 export default {
@@ -155,6 +201,7 @@ export default {
     verifyToken,
     authenticateJwt,
     login,
-    TOKEN_EXPIRY,
+    refreshTokenMiddleware,
+    USED_TOKENS,
 };
 

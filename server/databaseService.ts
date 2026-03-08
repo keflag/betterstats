@@ -3,7 +3,7 @@
  * @description 安全的数据库服务，提供PostgreSQL数据库访问API，端口17342
  * @author keflag
  * @createDate 2026-03-08 09:38:44
- * @lastUpdateDate 2026-03-08 09:55:00
+ * @lastUpdateDate 2026-03-08 09:59:41
  * @version 1.0.0
  */
 
@@ -14,7 +14,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import SERVER_CONFIG from './config';
-import { authenticateJwt, login } from './auth';
+import { authenticateJwt, login, refreshTokenMiddleware } from './auth';
 
 // 加载环境变量
 dotenv.config();
@@ -138,8 +138,9 @@ app.get('/health', (req: Request, res: Response) => {
 // 登录接口（无需token）
 app.post('/api/login', login);
 
-// 以下接口需要JWT token认证
+// 以下接口需要JWT token认证，并自动刷新token
 app.use(authenticateJwt);
+app.use(refreshTokenMiddleware);
 
 // 查询接口 - 使用参数化查询防止SQL注入
 app.post('/api/query', async (req: Request, res: Response, next: NextFunction) => {
